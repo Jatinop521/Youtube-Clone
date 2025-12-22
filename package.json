@@ -1,0 +1,15 @@
+{
+  "name": "videoorganizer",
+  "version": "1.0.0",
+  "description": "This is a simple type of clone of YouTube",
+  "license": "ISC",
+  "author": "Jatin",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev" : "nodemon src/index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
