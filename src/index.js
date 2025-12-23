@@ -8,7 +8,19 @@ dotenv.config();
 
 import { Connector } from "./db/index.js";
 
-Connector();
+Connector()
+.then(() => {
+    app.on('error', (error) => {
+        console.log('Error Occred in loading app in index.js' , error)
+        throw error;
+    }
+    )
+    app.listen(process.env.PORT || 8000 , () => {
+        console.log('Settings loaded successfully')
+    })
+}
+)
+.catch((e) => console.log('Error Occured In the Connector ' , e));
 // (async () => {
 //     try{
 //         await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`)
