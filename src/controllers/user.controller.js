@@ -3,7 +3,13 @@ import ErrorApi from "../utils/errorApi.js";
 import { cloudinaryUploader } from "../utils/cloudinaryFiles.js";
 import { User } from "../models/user.models.js";
 import ResponseApi from "../utils/ResponseApi.js";
+import JWT from 'jsonwebtoken';
 //Miter Middleware should be in the direct code
+
+const options = {
+        httpOnly : true,  /// Mitre Server Only can Change this
+        secure : true
+}
 
 // This function is to Generate Access and Refresh Token use for authentication;
 const generateAccessAndRefreshToken = async(userId) => {
@@ -117,10 +123,7 @@ const loginUserHandler = handleasync(async (req , res) => {
 
     const {accessToken , refreshToken} = await generateAccessAndRefreshToken(IsUser._id);
 
-    const options = {
-        httpOnly : true,  /// Mitre Server Only can Change this
-        secure : true
-    }
+
     return res.status(200)
     .cookie('accessToken' , accessToken , options)
     .cookie('refreshToken' , refreshToken , options)
@@ -142,10 +145,6 @@ const logoutUserHandler = handleasync(async (req , res) => {
         refreshToken : undefined
     }, {new : true})
 
-    const options = {
-        httpOnly : true,
-        secure : true
-    }
     return res.status(200)
     .cookie('accessToken', options)
     .cookie('refreshToken', options)
@@ -154,4 +153,46 @@ const logoutUserHandler = handleasync(async (req , res) => {
     )
 })
 
-export {userResHandler, loginUserHandler , logoutUserHandler};
+const refreshTokenHandler = handleasync(async (req , res) => {
+    const refreshToken = req.cookies.refreshToken 
+    || req.headers.authorization?.split(' ')[1] 
+    || req.body.refreshToken;
+
+    if(!refreshToken){
+        throw new ErrorApi(400 , 'Refresh Token is required')
+    }
+
+    
+    try {
+        const decodedToken = JWT.verify(refreshToken , process.env.REFRESH_TOKEN_SECRET) // Where we save Expiry ?
+    } catch (error) {
+        throw new ErrorApi(401 , 'Invalid or Expired Refresh Token')
+    }
+
+
+    const user = await User.findById(decodedToken._id).select("-password -refreshToken")
+
+    if(!user || user.refreshToken !== refreshToken){
+        throw new ErrorApi(401 , 'Invalid Refresh Token or User not found')
+    }
+
+    const {accessToken , newRefreshToken} = await generateAccessAndRefreshToken(user._id);
+
+    return res.status(200)
+    .cookies('accessToken' , accessToken , options)
+    .cookies('refreshToken' , newRefreshToken , options)
+    .json(
+        new ResponseApi(200 , 'Tokens refreshed successfully' , {
+            accessToken,
+            refreshToken : newRefreshToken
+        })
+    )
+
+})
+
+export {
+     userResHandler
+    , loginUserHandler 
+    , logoutUserHandler
+    , refreshTokenHandler
+};

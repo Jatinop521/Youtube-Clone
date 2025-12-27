@@ -19,7 +19,9 @@ userRouter.route('/render').post(
     userResHandler
 )
 
-userRouter.route('/login' , loginUserHandler)
-userRouter.route('/logout' , identifyJWT ,logoutUserHandler )
+userRouter.route('/login').post(loginUserHandler)
+userRouter.route('/logout').post( identifyJWT ,logoutUserHandler)
+
+userRouter.route('/refresh-login').post()
 
 export { userRouter };
