@@ -10,7 +10,7 @@ const Connector = async () => {
         console.log('Succefully connected to dB')
         
     }catch(error){
-        console.log('Error : Connection Failed : ', error)
+        console.log('Error : dB Connection Failed : ', error)
         process.exit(1)
     }
 }

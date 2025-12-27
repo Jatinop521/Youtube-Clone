@@ -49,10 +49,10 @@ const userSchema = new Schema({
 } , {timestamps : true})
 
 userSchema.pre('save' , async function(next){
-    if(! this.isModified('password')) return next();
+    if(!this.isModified('password')) return next;
 
     this.password = await bcrypt.hash(this.password , saltsRound)
-    next();
+    next;
 })
 
 userSchema.method.passCompare = async function (password) {
