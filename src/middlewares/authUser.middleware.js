@@ -1,6 +1,7 @@
 import JWT from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import ErrorApi from '../utils/errorApi.js';
+import { User } from '../models/user.models.js';
 
 dotenv.config();
 export const identifyJWT = async (req, _ , next) => {
@@ -12,9 +13,15 @@ export const identifyJWT = async (req, _ , next) => {
     
         const decodedInfo = JWT.verify;(token , process.env.ACCESS_TOKEN_SECRET)
 
-        req.user = decodedInfo._id;
-        return next();
-        
+        const user = await User.findById(decodedInfo._id).select("-password -refreshToken");
+
+        if(!user){
+            throw new ErrorApi(200 , 'User Not Found with this access Token')
+        }
+
+        req.user = user;
+        next();
+
     } catch (error) {
         throw new ErrorApi(401 , error || 'You are not authorized to this account please login again')
     }

@@ -137,14 +137,21 @@ const loginUserHandler = handleasync(async (req , res) => {
 const logoutUserHandler = handleasync(async (req , res) => {
     // Mitre Logout Do not Delete the ID ! Remember that >>> 
     // Not Directly as I have to out that people which is Really Out
-    req.user = null;
-    res.status(200)
-    .cookie('accessToken' , '' , {maxAge : 0 , httpOnly : true , secure : true})
-    .cookie('refreshToken' , '' , {maxAge : 0 , httpOnly : true , secure : true})
-    .json(
-        new ResponseApi(200 , null , 'User logged out successfully')
-    )
+ 
+    await User.findByIdAndUpdate(req.user._id , {
+        refreshToken : undefined
+    }, {new : true})
 
+    const options = {
+        httpOnly : true,
+        secure : true
+    }
+    return res.status(200)
+    .cookie('accessToken', options)
+    .cookie('refreshToken', options)
+    .json(
+        new ResponseApi(200, 'User logged out successfully')
+    )
 })
 
 export {userResHandler, loginUserHandler , logoutUserHandler};
