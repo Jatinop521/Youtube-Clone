@@ -3,6 +3,26 @@ import ErrorApi from "../utils/errorApi.js";
 import { cloudinaryUploader } from "../utils/cloudinaryFiles.js";
 import { User } from "../models/user.models.js";
 import ResponseApi from "../utils/ResponseApi.js";
+//Miter Middleware should be in the direct code
+
+// This function is to Generate Access and Refresh Token use for authentication;
+const generateAccessAndRefreshToken = async(userId) => {
+    try{
+        const user = await User.findById(userId)
+        const accessToken = await user.generateAccessToken();
+
+        const refreshToken = await user.generateRefreshToken();
+
+        user.refreshToken = refreshToken;
+        await user.save({validateBeforeSave : false})
+
+        return {accessToken , refreshToken}
+    }catch{
+        throw new ErrorApi(500 , 'Failed to Generate Access and Refresh Tokens')
+    }
+    
+}
+
 
 const userResHandler = handleasync(async (req, res) => {
     res.json({
@@ -69,4 +89,62 @@ const userResHandler = handleasync(async (req, res) => {
 
 
 })
-export {userResHandler}
+
+const loginUserHandler = handleasync(async (req , res) => {
+
+    const {userName , email , password} =  req.body;
+
+    if(!userName && !email){
+        throw new ErrorApi(400 , 'userName or email is required')
+    }
+
+    const IsUser= User.findOne({
+        $or : [{userName} , {email}]
+    });
+
+    if(!IsUser){
+        throw new ErrorApi(409 , 'User Not Found!')
+    }
+
+    if(!password){
+        throw new ErrorApi(400 , 'Password is required')
+    }
+
+    const IsMatchedPassword = await IsUser.passCompare(password);
+    if(!IsMatchedPassword){
+        throw new ErrorApi(400 , 'Wrong Password')
+    }
+
+    const {accessToken , refreshToken} = await generateAccessAndRefreshToken(IsUser._id);
+
+    const options = {
+        httpOnly : true,  /// Mitre Server Only can Change this
+        secure : true
+    }
+    return res.status(200)
+    .cookie('accessToken' , accessToken , options)
+    .cookie('refreshToken' , refreshToken , options)
+    .json(
+        new ResponseApi(200 , "User logged in successfully",{
+            user : IsUser,
+            accessToken,
+            refreshToken
+        })
+    )
+
+})
+
+const logoutUserHandler = handleasync(async (req , res) => {
+    // Mitre Logout Do not Delete the ID ! Remember that >>> 
+    // Not Directly as I have to out that people which is Really Out
+    req.user = null;
+    res.status(200)
+    .cookie('accessToken' , '' , {maxAge : 0 , httpOnly : true , secure : true})
+    .cookie('refreshToken' , '' , {maxAge : 0 , httpOnly : true , secure : true})
+    .json(
+        new ResponseApi(200 , null , 'User logged out successfully')
+    )
+
+})
+
+export {userResHandler, loginUserHandler , logoutUserHandler};

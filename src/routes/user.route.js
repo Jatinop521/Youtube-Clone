@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { userResHandler } from "../controllers/user.controller.js";
+import { userResHandler , loginUserHandler , logoutUserHandler} from "../controllers/user.controller.js";
 import { multerUpload } from "../middlewares/multer.middleware.js";
+import { identifyJWT } from "../middlewares/authUser.middleware.js";
 
 let userRouter = Router();
 
@@ -17,5 +18,8 @@ userRouter.route('/render').post(
     ]) , 
     userResHandler
 )
+
+userRouter.route('/login' , loginUserHandler)
+userRouter.route('/logout' , identifyJWT ,logoutUserHandler )
 
 export { userRouter };
