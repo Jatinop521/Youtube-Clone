@@ -104,7 +104,7 @@ const loginUserHandler = handleasync(async (req , res) => {
         throw new ErrorApi(400 , 'userName or email is required')
     }
 
-    const IsUser= User.findOne({
+    const IsUser= await User.findOne({
         $or : [{userName} , {email}]
     });
 
@@ -186,13 +186,142 @@ const refreshTokenHandler = handleasync(async (req , res) => {
             accessToken,
             refreshToken : newRefreshToken
         })
-    )
+)})
 
+const passwordChangerHandler = handleasync(async (req , res) => {
+    const {oldPassword , newPassword} = req.body;
+
+    if(!(oldPassword || newPassword)){
+        throw new ErrorApi(400 , "Old Password and New Password Both are required!")
+    }
+    const user = await User.findById(req.user?._id);
+    const IsCorrectPassword = await user.passCompare(oldPassword);
+
+    if(!IsCorrectPassword){
+        throw new ErrorApi(401 , "please enter the correct password")
+    }
+
+    user.password = newPassword;
+    user.save({validateBeforeSave : false})
+
+    return res.status(200).json(
+        new ResponseApi(200 , 'Password changed successfully')
+    )
 })
 
-export {
-     userResHandler
+
+const getCurrentUser = handleasync(async (req , res) => {
+    return res.status(200).json(
+        new ResponseApi(200 , 'Current User fetched successfully' , req.user)
+    )
+})
+
+const UpdateAccountDetails = handleasync(async (req , res) => {
+    const {fullname , email} = req.body;
+    if(!(fullname , email)){
+        throw new ErrorApi(400 , "Fullname and Email both are required")
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id ,
+        {
+            $set : {
+                fullname,
+                email
+            }
+        },
+        {
+            new : true
+        }
+    ).select("-password")
+
+    if(!user){
+        throw new ErrorApi(500 , "Failed to update user details")
+    }
+
+    return res.status(200)
+    .json(
+        new ResponseApi(200 , "Details Updated Successfully!" , user)
+    )
+})
+
+const AvatarUpdateHandler = handleasync(async (req , res) => {
+    const avatarLocal = req.file?.path;
+
+    if(!avatarLocal){
+        throw new ErrorApi(400 , 'Avatar file is required')
+    }
+
+    const avatar = await cloudinaryUploader(avatarLocal);
+
+    if(!avatar){
+        throw new ErrorApi(500 , 'Failed to load avatar on cloudinary || server side error')
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id ,
+        {
+            $set : {
+                avatar
+            }
+        },
+        {
+            new : true
+        }
+    ).select("-password")
+
+    if(!user){
+        throw new ErrorApi(500 , "Failed to update user avatar")
+    }
+
+    return res.status(200).json(
+        new ResponseApi(200 , "Avatar updated successfully" , user)
+    )
+})
+
+
+const coverImageChangeHandler = handleasync(async (req , res) => {
+    const coverImageLocal = req.file?.path;
+
+    if(!coverImageLocal){
+        throw new ErrorApi(400 , 'Cover Image file is required')
+    }
+
+    const coverImage = await cloudinaryUploader(coverImageLocal);
+
+    if(!coverImage){
+        throw new ErrorApi(500 , 'Failed to load cover image on cloudinary || server side error')
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id ,
+        {
+            $set : {
+                coverImage
+            }
+        },
+        {
+            new : true
+        }
+    ).select("-password")
+
+    if(!user){
+        throw new ErrorApi(500 , "Failed to update user cover image")
+    }
+
+    return res.status(200).json(
+        new ResponseApi(200 , "Cover Image updated successfully" , user)
+    )
+}   
+)
+
+export { userResHandler
     , loginUserHandler 
     , logoutUserHandler
     , refreshTokenHandler
+    , passwordChangerHandler
+    , getCurrentUser
+    , UpdateAccountDetails
+    , AvatarUpdateHandler
+    , coverImageChangeHandler
 };

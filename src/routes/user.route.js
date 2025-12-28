@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { userResHandler , loginUserHandler , logoutUserHandler} from "../controllers/user.controller.js";
+import { userResHandler , loginUserHandler , logoutUserHandler , refreshTokenHandler} from "../controllers/user.controller.js";
 import { multerUpload } from "../middlewares/multer.middleware.js";
 import { identifyJWT } from "../middlewares/authUser.middleware.js";
 
@@ -22,6 +22,6 @@ userRouter.route('/render').post(
 userRouter.route('/login').post(loginUserHandler)
 userRouter.route('/logout').post( identifyJWT ,logoutUserHandler)
 
-userRouter.route('/refresh-login').post()
+userRouter.route('/refresh-login').post(refreshTokenHandler)
 
 export { userRouter };
